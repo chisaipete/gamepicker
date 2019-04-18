@@ -46,24 +46,8 @@ Just use a list--brute force!
 - Custom list of games that don't fit these categories
 - Games I could still play (because I have the disk)
 
-## Authentication Handling
-
 ## Structure & TDD Planning
 
 Main -> [ Distributor(steam, gog, hb, ...) -> get_library() ] -> uniquify && combine -> random selection -> present to user
 
-# Next Up:
 
-## Off Stream Work
-
-- Consider if we are missing services
-- Research some solutions for different services
-
-## On Stream Work
-
-- Get Main up and running with TDD structure
-- Handling Credentials
-
-## As Requested
-
-- PyCharm intro
