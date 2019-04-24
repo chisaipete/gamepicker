@@ -3,6 +3,8 @@ import pickle
 import random
 import unittest
 
+from pathlib import Path
+
 
 class Distributor:
     def __init__(self, name=None):
@@ -32,11 +34,14 @@ class Distributor:
                     key, value = line.split()
                     self.credentials[key] = value
 
-    def get_library(self):
+    def get_titles_from_library(self):
         return self.library.to_list()
 
     def add_game(self, title):
-        self.library.append(Game(title))
+        self.library.add_game(Game(title, distributor=[self.name]))
+
+    def get_game(self, title):
+        return self.library.get_game(title)
 
     def check_connection(self):
         self.connection_alive = False
@@ -44,7 +49,7 @@ class Distributor:
 
 class Library:
     def __init__(self):
-        self.games = []
+        self.games = {}
 
     def __len__(self):
         return len(self.games)
@@ -53,19 +58,25 @@ class Library:
         return self.games == other.games
 
     def to_list(self):
-        return self.games
+        return list(self.games.keys())
 
-    def append(self, title):
-        self.games.append(title)
+    def add_game(self, game):
+        if game.name in self.games:
+            # ['hb','steam'] + ['steam','gog'] = ['hb', 'steam', 'gog']
+            self.games[game.name].distributors = sorted(list(set(self.games[game.name].distributors + game.distributors)))
+        else:
+            self.games[game.name] = game
+
+    def get_game(self, name):
+        return self.games.get(name, None)
 
     def add_games_from_distributor(self, distributor):
-        for game in distributor.get_library():
-            self.games.append(game)
+        for title in distributor.get_titles_from_library():
+            self.add_game(distributor.get_game(title))
 
     def add_games_from_distributor_list(self, distributor_list):
         for distributor in distributor_list:
-            for game in distributor.get_library():
-                self.games.append(game)
+            self.add_games_from_distributor(distributor)
 
     def save_to_disk(self, lib_file):
         with open(lib_file, 'wb') as save_file:
@@ -78,13 +89,14 @@ class Library:
     def choose_game(self):
         if len(self) == 0:
             raise LibraryIsEmptyError
-        return random.choice(self.games)
+        return self.get_game(random.choice(list(self.games.keys())))
 
 
 class Game:
-    def __init__(self, name=None, played=False):
+    def __init__(self, name=None, distributor=None, played=False):
         self.name = name
         self.played = played
+        self.distributors = distributor
 
     def __eq__(self, other):
         return self.name == other.name and self.played == other.played
@@ -107,11 +119,11 @@ class DistributorTests(unittest.TestCase):
         self.master_library = Library()
 
     def test_empty_library(self):
-        self.assertEqual([], self.distributor.get_library())
+        self.assertEqual([], self.distributor.get_titles_from_library())
 
     def test_library_of_one_game(self):
-        self.distributor.add_game(Game())
-        self.assertEqual(1, len(self.distributor.get_library()))
+        self.distributor.add_game('foo')
+        self.assertEqual(1, len(self.distributor.get_titles_from_library()))
 
     def test_empty_game(self):
         game = Game()
@@ -124,16 +136,18 @@ class DistributorTests(unittest.TestCase):
 
     def test_create_game_with_name_and_played(self):
         game_a = Game("Foobar")
-        game_b = Game("Bizwiz", True)
+        game_b = Game("Bizwiz", played=True)
         self.assertEqual(False, game_a.played)
         self.assertEqual(True, game_b.played)
 
     def test_only_games_in_library(self):
-        self.distributor.add_game('Foo')
-        self.assertIsInstance(self.distributor.get_library()[0], Game)
+        self.distributor.add_game('foo')
+        self.assertIsInstance(self.distributor.get_game('foo'), Game)
 
     def test_distributor_has_name(self):
         self.assertEqual('distributor', self.distributor.name)
+        steam = Distributor('steam')
+        self.assertEqual('steam', steam.name)
 
     def test_distributor_loads_existing_credentials(self):
         self.assertIsNotNone(self.distributor.credentials)
@@ -162,11 +176,11 @@ class DistributorTests(unittest.TestCase):
     def test_master_library_distributor_list_combining_functionality(self):
         self.assertEquals(0, len(self.master_library))
         steam = Distributor()
-        steam.add_game('A')
         gog = Distributor()
+        hb = Distributor()
+        steam.add_game('A')
         gog.add_game('B')
         gog.add_game('C')
-        hb = Distributor()
         hb.add_game('D')
         self.assertEqual(1, len(steam))
         self.assertEqual(2, len(gog))
@@ -175,8 +189,18 @@ class DistributorTests(unittest.TestCase):
         self.master_library.add_games_from_distributor(gog)
         self.master_library.add_games_from_distributor(hb)
         self.assertEqual(4, len(self.master_library))
-        self.master_library.add_games_from_distributor_list([gog, gog, gog])
-        self.assertEqual(10, len(self.master_library))
+
+    def test_master_library_uniquify_games_when_added(self):
+        steam = Distributor()
+        gog = Distributor()
+        hb = Distributor()
+        steam.add_game('A')
+        gog.add_game('B')
+        gog.add_game('C')
+        hb.add_game('B')
+        hb.add_game('D')
+        self.master_library.add_games_from_distributor_list([steam, gog, hb])
+        self.assertEqual(4, len(self.master_library))
 
     def test_save_and_load_library_to_and_from_disk(self):
         self.distributor.add_game('A')
@@ -198,6 +222,19 @@ class DistributorTests(unittest.TestCase):
         self.master_library.add_games_from_distributor(self.distributor)
         chosen_game = self.master_library.choose_game()
         self.assertIsInstance(chosen_game, Game)
+
+    def test_distributor_list_is_unique(self):
+        Path('1.cred').touch()
+        Path('2.cred').touch()
+        dist_1 = Distributor('1')
+        dist_2 = Distributor('2')
+        dist_1.add_game('A')
+        dist_2.add_game('A')
+        self.master_library.add_games_from_distributor_list([dist_1, dist_2])
+        self.assertIsInstance(self.master_library.get_game('A').distributors, list)
+        self.assertEqual(['1', '2'], self.master_library.get_game('A').distributors)
+        os.remove('1.cred')
+        os.remove('2.cred')
 
 
 if __name__ == '__main__':
