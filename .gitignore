@@ -3,3 +3,4 @@ venv
 *.cred
 *.lib
 !distributor.cred
+__pycache__
