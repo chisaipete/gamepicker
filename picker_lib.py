@@ -14,8 +14,9 @@ class Distributor:
         self.library = Library()
         self.credentials = {}
         self.connection_alive = None
+        self.api = None
         self.load_credentials()
-        self.check_connection()
+        self.setup_connection()
 
     def __len__(self):
         return len(self.library)
@@ -42,7 +43,7 @@ class Distributor:
     def get_game(self, title):
         return self.library.get_game(title)
 
-    def check_connection(self):
+    def setup_connection(self):
         self.connection_alive = False
 
     def load_library_with_games(self):
@@ -143,7 +144,7 @@ def game_decoder(obj):
 
 
 class Game:
-    def __init__(self, name=None, distributor=None, played=False):
+    def __init__(self, name=None, distributor=[], played=False):
         self.name = name
         self.played = played
         self.distributors = distributor

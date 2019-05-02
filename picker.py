@@ -1,5 +1,6 @@
 import argparse
 
+from dist_steam import Steam
 from picker_lib import Library, LibraryIsEmptyError
 
 if __name__ == '__main__':
@@ -12,14 +13,17 @@ if __name__ == '__main__':
 
     # load master library from list of registered distributors
     ml = Library()
+    steam = Steam()
+    steam.load_library_with_games()
+    ml.add_games_from_distributor(steam)
 
     if args.read_library:
-        print(ml)
+        # print(ml)
         print(f"Master Library: {ml.total_games()} games, {ml.total_games(unplayed=True)} unplayed, across these platforms: {' '.join(ml.get_distributors())}")
 
     if args.pick_game:
         try:
             chosen_game = ml.choose_game()
-            print(f"You should play: {chosen_game.name} on {chosen_game.distributor}")
+            print(f"You should play: {chosen_game.name} on {chosen_game.distributors}")
         except LibraryIsEmptyError:
             print(f"Sad. You have no games to choose from!")
