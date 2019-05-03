@@ -1,6 +1,6 @@
 from unittest import TestCase
-from picker_lib import Distributor, Game
-from steam import steamid, WebAPI
+from picker_lib import Distributor
+from steam import WebAPI
 
 
 class Steam(Distributor):
@@ -29,10 +29,15 @@ class Steam(Distributor):
             )
             steam_game_list = data['response']['games']
             for game in steam_game_list:
-                self.library.add_game(Game(game['name'], self.name, True if game['playtime_forever'] > 0 else False))
+                self.add_game(game['name'], True if game['playtime_forever'] > 0 else False)
 
 
-class FlatFileDistributorTests(TestCase):
+class SteamDistributorTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        import warnings
+        warnings.filterwarnings('ignore', 'unclosed*', ResourceWarning)
+
     def setUp(self):
         self.stm = Steam()
 
