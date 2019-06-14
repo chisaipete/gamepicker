@@ -1,5 +1,6 @@
 import argparse
 
+from dist_json import JsonDistributor
 from dist_steam import Steam
 from picker_lib import Library, LibraryIsEmptyError
 
@@ -13,9 +14,15 @@ if __name__ == '__main__':
 
     # load master library from list of registered distributors
     ml = Library()
+
     steam = Steam()
     steam.load_library_with_games()
+    hb = JsonDistributor()
+    hb.load_library_with_games('hb.json')
+
     ml.add_games_from_distributor(steam)
+    ml.add_games_from_distributor(hb)
+
 
     if args.read_library:
         # print(ml)
