@@ -12,7 +12,7 @@ class JsonDistributor(Distributor):
             self.library.games = {}
             self.library.load_from_disk(path)
             for game in self.library.games:
-                self.library.games[game].distributors = self.name
+                self.library.games[game].distributors = [self.name]
 
 
 class FlatFileDistributorTests(TestCase):

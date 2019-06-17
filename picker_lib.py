@@ -6,7 +6,7 @@ from pathlib import Path
 
 
 class Distributor:
-    def __init__(self, name=None):
+    def __init__(self, name=None, authorize=True):
         if name:
             self.name = name
         else:
@@ -15,7 +15,8 @@ class Distributor:
         self.credentials = {}
         self.connection_alive = None
         self.api = None
-        self.load_credentials()
+        if authorize:
+            self.load_credentials()
         self.setup_connection()
 
     def __len__(self):
@@ -234,14 +235,15 @@ token thisissomecrazystring""")
 
     def test_master_library_distributor_list_combining_functionality(self):
         self.assertEqual(0, len(self.master_library))
-        steam = Distributor()
-        gog = Distributor()
-        hb = Distributor()
+        steam = Distributor('steam', False)
+        gog = Distributor('gog', False)
+        hb = Distributor('humble', False)
         steam.add_game('A')
+        steam.add_game('B')
         gog.add_game('B')
         gog.add_game('C')
         hb.add_game('D')
-        self.assertEqual(1, len(steam))
+        self.assertEqual(2, len(steam))
         self.assertEqual(2, len(gog))
         self.assertEqual(1, len(hb))
         self.master_library.add_games_from_distributor(steam)

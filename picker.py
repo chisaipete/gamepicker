@@ -17,7 +17,7 @@ if __name__ == '__main__':
 
     steam = Steam()
     steam.load_library_with_games()
-    hb = JsonDistributor()
+    hb = JsonDistributor('humblebundle')
     hb.load_library_with_games('hb.json')
 
     ml.add_games_from_distributor(steam)
